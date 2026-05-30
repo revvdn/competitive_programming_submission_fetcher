@@ -1,8 +1,8 @@
 # competitive programming submission fetcher
 
-![Python](https://img.shields.io/badge/python-3.1-red.svg)
-![C++](https://img.shields.io/badge/c++-16.1-blue.svg)
-![Cmake](https://img.shields.io/badge/CMake-4.3-green.svg)
+![Python](https://img.shields.io/badge/python-3.1-blue.svg)
+![C++](https://img.shields.io/badge/c++-16.1-F34B7D.svg)
+![Cmake](https://img.shields.io/badge/CMake-4.3-red.svg)
 
 fetch all your submission from competitive programming platform and commit it on github
 
