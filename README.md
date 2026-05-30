@@ -1,6 +1,6 @@
 # competitive programming submission fetcher
 
-![Python](https://shields.io)
+![Python](https://img.shields.io/badge/python-3.6-blue.svg)
 
 fetch all your submission from competitive programming platform and commit it on github
 
