@@ -3,6 +3,6 @@ __pycache__/
 problem_breakdown.md
 CF_STATS.md
 problems/
-backend/
 temp.cpp
 build/
+stats/
