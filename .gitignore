@@ -6,3 +6,5 @@ problems/
 temp.cpp
 build/
 stats/
+.cph/
+.vscode/
