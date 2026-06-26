@@ -11,3 +11,4 @@ stats/
 template.cpp
 test.cpp
 UI.cpp
+engine.py
