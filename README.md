@@ -14,6 +14,16 @@ fetch all your submission from competitive programming platform and commit it on
 * commit for each submission with the original submit date to make your contribution graph looks magnificien
 * automated git push to remote repository **- ongoing feature**
 
+## architecture
+
+'''bash
+tui/                C++ FTXUI
+backend/            python based backend service
+shared/schema/      JSON contracts
+cache/              caching
+core/ main.py       markdwon generator
+'''
+
 ## platforms
 
 This tool currently support only [codeforces](https://codeforces.com/)
@@ -55,18 +65,31 @@ pip install -r requirements.txt
 ## getting started
 
 after installing, run the following command to start :
+
+build:
 ```bash
-python main.py <your_handle> --fast
+cmake -S, -B build
+cmake --build build
 ```
 
-example :
-```bash
-python main.py tourist
+run:
+```bash 
+./build/tui/cpse_tui
 ```
 
-after successfully run the tools, your result would be in 
-```bash
-codeforces_submission_craper/CF_STATS.md
+for windows, if python is not a real interpreter, set:
+
+```powershell
+$env:CPSE_PYTHON = "C:\path_to\python.exe"
+```
+
+## navigation
+```text
+TAB     : switch panel
+ENTER   : fetch / analyze selected problem
+UP/DOWN : navigate problem list
+ESC     : return to list
+Q       : quit / exit
 ```
 
 ## future work
