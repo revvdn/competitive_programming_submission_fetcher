@@ -8,3 +8,6 @@ build/
 stats/
 .cph/
 .vscode
+template.cpp
+test.cpp
+UI.cpp
