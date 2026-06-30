@@ -44,11 +44,10 @@ def analyze_problem (problem_id:str, cache_dir: Path | None = None) -> dict[str,
         for item in problems.values() 
         if item.get("rating") is not None and rating is not None and abs(item["rating"] - rating) <= 200
     ]
-
     distribution = Counter(str(item["rating"]) for item in nearby)
 
     return {
-        "problemID": normalize,
+        "problemId": normalize,
         "name": problem["name"],
         "rating": rating,
         "tags": tags,

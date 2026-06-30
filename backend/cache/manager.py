@@ -29,11 +29,11 @@ def write_json(path: Path, data: Any) -> None:
 def cached_json(name: str, default: Any = None, cache_dir: Path | None = None) -> Any:
     chace_root = ensure_cache_dir(cache_dir)
     current = chace_root / name
-    if current.exist():
+    if current.exists():
         return read_json(current, default)
 
     legacy = LEGACY_STORAGE_DIR / name
-    if legacy.exist():
+    if legacy.exists():
         return read_json(legacy, default)
         
     return default

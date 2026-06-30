@@ -21,7 +21,7 @@ def cache_path(cache_dir: Optional[Path], name: str) -> Path:
 def load_cached_json (cache_dir: Optional[Path], name: str):
     path = cache_path(cache_dir, name)
     
-    if Path.exist():
+    if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
@@ -48,21 +48,26 @@ def get_problem_index(cache_dir: Optional[Path] = None, refresh: bool = False) -
             if data.get("status") != "OK" :
                 raise RuntimeError("failed to fetch")
             save_cached_json(cache_dir, PROBLEM_CACHE, data)
+    else:
+        data = fetch_json(API_PROBLEMSET)
+        if data.get("status") != "OK":
+            raise RuntimeError("failed to fetch")
+        save_cached_json(cache_dir, PROBLEM_CACHE, data)
 
-        indexed: Dict[str, Dict[str, Any]] = {}
-        for detail in data.get("result", {}).get("problems", []):
-            if "contestId" in detail and "index" in detail:
-                pid = f"{detail['contestId']}{detail['index']}"
-                indexed[pid] = {
-                    "problemId": pid,
-                    "contestId": detail["contestId"],
-                    "index": detail["index"],
-                    "name": detail.get("name", ""),
-                    "rating": detail.get("rating"),
-                    "tags": detail.get("tags", []),
-                }
-        
-        return indexed
+    indexed: Dict[str, Dict[str, Any]] = {}
+    for detail in data.get("result", {}).get("problems", []):
+        if "contestId" in detail and "index" in detail:
+            pid = f"{detail['contestId']}{detail['index']}"
+            indexed[pid] = {
+                "problemId": pid,
+                "contestId": detail["contestId"],
+                "index": detail["index"],
+                "name": detail.get("name", ""),
+                "rating": detail.get("rating"),
+                "tags": detail.get("tags", []),
+            }
+    
+    return indexed
     
 def load_fetch_problem(cache_dir: Optional[Path]):
     path = cache_path(cache_dir, FETCHED_FILE)
@@ -78,7 +83,7 @@ def save_fetch_problem(cache_dir: Optional[Path], fetch_pid):
         json.dump(list(fetch_pid), f)
 
 def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_problemset: bool = False) -> List[Dict[str, Any]]:
-    problems = get_problem_index(cache_dir=cache_dir, resfresh=refresh_problemset)
+    problems = get_problem_index(cache_dir=cache_dir, refresh=refresh_problemset)
 
     data = fetch_json(API_USER_STATUS, {"handle": handle})
     if data.get("status") != "OK" :
@@ -90,7 +95,7 @@ def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_
 
     fetch_pid = load_fetch_problem(cache_dir)
 
-    accepted = Dict[str, Dict[str, Any]] = {}
+    accepted : Dict[str, Dict[str, Any]] = {}
 
     for sub in submission:
         if sub.get("verdict") != "OK":
@@ -107,7 +112,7 @@ def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_
         if metadata.get("rating") is None :
             continue
 
-        if pid not in accepted or sub.get("creationTimeSecond", 0) > accepted[pid]["solvedAt"]:
+        if pid not in accepted or sub.get("creationTimeSeconds", 0) > accepted[pid]["solvedAt"]:
             accepted[pid] = {
                 **metadata,
                 "submissionId": sub.get("id"),
