@@ -30,11 +30,19 @@ def cached_json(name: str, default: Any = None, cache_dir: Path | None = None) -
     chace_root = ensure_cache_dir(cache_dir)
     current = chace_root / name
     if current.exists():
-        return read_json(current, default)
+        value = read_json(current, default)
+        if value:
+            return value
 
     legacy = LEGACY_STORAGE_DIR / name
     if legacy.exists():
-        return read_json(legacy, default)
+        value = read_json(legacy, default)
+        if value:
+            return value
+        
+    legacy_root = PROJECT_ROOT / name
+    if legacy_root.exists():
+        return read_json(legacy_root, default)
         
     return default
 

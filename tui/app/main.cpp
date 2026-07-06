@@ -173,7 +173,7 @@ void analyzeselected (AppState& state) {
         const auto payload = json::parse(runcommand(command));
 
         if (payload.value("status", "") != "success") 
-            throw std::runtime_error(payload.value("error", "unkown backennd error"));
+            throw std::runtime_error(payload.value("error", "unkown backend error"));
 
         const auto& item = payload.at("analysis");
         Analysis analysis;
@@ -266,12 +266,14 @@ ftxui::Element inputpane (ftxui::Component handle_input, ftxui::Component start_
 ftxui::Element analysispane (const AppState& state) {
     std::vector<ftxui::Element> content;
     
-    if (state.current_screen != ScreenState::ProblemAnalysis) 
-        content.push_back(ftxui::text("select a problem and press ENTER") | ftxui::color(ftxui::Color::GrayDark));
+    if (state.current_screen != ScreenState::ProblemAnalysis) {
+        content.push_back(ftxui::text("select problem and press ENTER") |
+                            ftxui::color(ftxui::Color::GrayDark));
+    }
     else {
         content.push_back(ftxui::text(state.analysis.name) | ftxui::bold);
         content.push_back(ftxui::text("ID       : " + state.analysis.problem_id));
-        content.push_back(ftxui::text("Ratin    : " + std::to_string(state.analysis.rating)));
+        content.push_back(ftxui::text("Rating    : " + std::to_string(state.analysis.rating)));
         content.push_back(ftxui::text("Tags     : " + join (state.analysis.tags, ", ")));
         content.push_back(ftxui::separator());
         content.push_back(ftxui::text("difficulty distribution") | ftxui::bold);
@@ -285,16 +287,16 @@ ftxui::Element analysispane (const AppState& state) {
                 ftxui::color(ftxui::Color::Green),
                 ftxui::text(" " + std::to_string(count)),
             }));
+        }
 
-            content.push_back(ftxui::separator());
-            content.push_back(ftxui::text("similar problem") | ftxui::bold);
-
-            if (state.analysis.similar_problems.empty()) {
-                content.push_back(ftxui::text("no similar problem found in cache"));
-            } else {
-                for (const auto& problem : state.analysis.similar_problems) {
-                    content.push_back(ftxui::text("- " + problem.problem_id + " " + problem.name));
-                }
+        content.push_back(ftxui::separator());
+        content.push_back(ftxui::text("similar problems") | ftxui::bold);
+        if (state.analysis.similar_problems.empty()) {
+            content.push_back(ftxui::text("no similar problem found in cache"));
+        }
+        else {
+            for (const auto& problem : state.analysis.similar_problems) {
+                content.push_back(ftxui::text("-" + problem.problem_id + " " + problem.name));
             }
         }
     }

@@ -1,3 +1,4 @@
+'''
 from __future__ import annotations
 from collections import Counter
 from pathlib import Path
@@ -58,4 +59,16 @@ def analyze_problem (problem_id:str, cache_dir: Path | None = None) -> dict[str,
             "same_rating_count": distribution.get(str(rating), 0) if rating is not None else 0,
         },
     }
-        
+'''   
+
+from pathlib import Path
+from typing import Any
+
+from backend.services import AnalysisService, create_platform
+
+def normalize_problem_id(problem_id : str) -> str:
+    return problem_id.strip().upper()
+
+def analyze_problem(problem_id : str, cache_dir : Path | None = None) -> dict[str, Any] :
+    platform = create_platform("codeforces", cache_dir = cache_dir)
+    return AnalysisService(platform).analyze_problem(problem_id) 

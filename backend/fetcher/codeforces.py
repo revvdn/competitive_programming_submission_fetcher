@@ -1,87 +1,56 @@
-import logging 
-import requests
-import os 
-import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+from backend.services import FetchService, create_platform
 
-API_USER_STATUS = "https://codeforces.com/api/user.status"
-API_PROBLEMSET = "https://codeforces.com/api/problemset.problems"
-
-CACHE_DIR = "storage"
 PROBLEM_CACHE = "problem_cache.json"
 FETCHED_FILE = "fetch_problem.json"
 
-session = requests.Session()
-
-def cache_path(cache_dir: Optional[Path], name: str) -> Path:
-    base = Path.cwd() if cache_dir is None else cache_dir
+def cache_path(cache_dir: Path | None, name:str) -> Path:
+    base = Path.cwd() / "storage" if cache_dir is None else cache_dir
     return base / name
 
-def load_cached_json (cache_dir: Optional[Path], name: str):
+def load_cached_json(cache_dir: Path | None, name: str) -> Any:
     path = cache_path(cache_dir, name)
-    
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        from backend.cache.manager import read_json
+
+        return read_json(path)
     return None
 
-def save_cached_json(cache_dir: Optional[Path], name: str, data: Any) :
-    base = Path.cwd() if cache_dir is None else cache_dir
-    base.mkdir(parents=True, exist_ok=True)
-    path = base / name
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
+def save_fetched_json(cache_dir: Path | None, name: str, data: Any) -> None:
+    from backend.cache.manager import write_json
 
+    write_json(cache_path(cache_dir, name), data)
+
+'''
 def fetch_json(url: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     resp = session.get(url, params=params, timeout=20)
     resp.raise_for_status()
     return resp.json()
+'''
 
-def get_problem_index(cache_dir: Optional[Path] = None, refresh: bool = False) -> Dict[str, Dict[str, Any]]:
-    if not refresh:
-        cached = load_cached_json(cache_dir, PROBLEM_CACHE)
-        if cached:
-            data = cached
-        else :
-            data = fetch_json(API_PROBLEMSET)
-            if data.get("status") != "OK" :
-                raise RuntimeError("failed to fetch")
-            save_cached_json(cache_dir, PROBLEM_CACHE, data)
-    else:
-        data = fetch_json(API_PROBLEMSET)
-        if data.get("status") != "OK":
-            raise RuntimeError("failed to fetch")
-        save_cached_json(cache_dir, PROBLEM_CACHE, data)
-
-    indexed: Dict[str, Dict[str, Any]] = {}
-    for detail in data.get("result", {}).get("problems", []):
-        if "contestId" in detail and "index" in detail:
-            pid = f"{detail['contestId']}{detail['index']}"
-            indexed[pid] = {
-                "problemId": pid,
-                "contestId": detail["contestId"],
-                "index": detail["index"],
-                "name": detail.get("name", ""),
-                "rating": detail.get("rating"),
-                "tags": detail.get("tags", []),
-            }
+def get_problem_index(cache_dir: Path | None = None, refresh: bool = False) -> dict[str, dict[str, Any]]:
+    platform = create_platform("codeforces", cache_dir = cache_dir)
+    problems = platform.fetch_problemset(refresh = refresh)
     
-    return indexed
+    return {problem_id: problem.to_dict() for problem_id, problem in problems.items()}
     
-def load_fetch_problem(cache_dir: Optional[Path]):
+def load_fetch_problem(cache_dir: Path | None) -> set[str]:
     path = cache_path(cache_dir, FETCHED_FILE)
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return set(json.load(f))
+        from backend.cache.manager import read_json
+
+        return set(read_json(path, default=[]))
+
     return set()
 
-def save_fetch_problem(cache_dir: Optional[Path], fetch_pid):
-    path = cache_path(cache_dir, FETCHED_FILE)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open (path, "w", encoding="utf-8") as f:
-        json.dump(list(fetch_pid), f)
+def save_fetch_problem(cache_dir: Path | None, fetch_pid: set[str]) -> None:
+    from backend.cache.manager import write_json
 
+    path = cache_path(cache_dir, FETCHED_FILE)
+    write_json(path, sorted(fetch_pid))
+
+'''
 def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_problemset: bool = False) -> List[Dict[str, Any]]:
     problems = get_problem_index(cache_dir=cache_dir, refresh=refresh_problemset)
 
@@ -125,4 +94,15 @@ def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_
     )
 
     return result
+'''
 
+def fetched_solved_problems(
+        handle: str, 
+        cache_dir: Path | None = None,
+        refresh_problemset: bool = False,
+) -> list[dict[str, Any]]:
+    platform = create_platform("codeforces", cache_dir = cache_dir)
+    return FetchService(platform).fetch_solved_problems(
+        handle,
+        refresh_problemset = refresh_problemset,
+    )
