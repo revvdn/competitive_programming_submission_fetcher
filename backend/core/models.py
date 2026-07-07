@@ -8,7 +8,7 @@ class Problem:
     contest_id: int
     index: str
     name: str
-    rating = int | None = None
+    rating: int | None = None
     tags : tuple[str, ...] = field(default_factory=tuple)
 
     @classmethod
@@ -39,7 +39,7 @@ class Problem:
     
 @dataclass(frozen=True)
 class Submission:
-    Submission_id: int
+    submission_id: int
     problem_id: str
     contest_id: int
     index: str
@@ -66,7 +66,7 @@ class Submission:
     def to_solved_problem_dict(self, problem: Problem) -> dict[str, Any]:
         return {
             **problem.to_dict(),
-            "submissionId": self.Submission_id,
+            "submissionId": self.submission_id,
             "solvedAt": self.creation_time_seconds,
         }
     

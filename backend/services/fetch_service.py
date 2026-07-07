@@ -31,7 +31,7 @@ class FetchService:
         return solved
     
     @staticmethod
-    def solved_sort_keys(item: dict) -> tuple[int, int, str]:
+    def solved_sort_key(item: dict) -> tuple[int, int, str]:
         rating = item.get("rating")
         return (
             int(rating) if rating is not None else 10**9,

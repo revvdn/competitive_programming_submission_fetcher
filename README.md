@@ -68,7 +68,7 @@ after installing, run the following command to start :
 
 build:
 ```bash
-cmake -S, -B build
+cmake -S . -B build
 cmake --build build
 ```
 

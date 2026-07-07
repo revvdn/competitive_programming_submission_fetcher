@@ -12,7 +12,7 @@ class Platform(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def fetch_submission(self, handle: str) -> list[Submission]:
+    def fetch_submissions(self, handle: str) -> list[Submission]:
         raise NotImplementedError
     
     @abstractmethod

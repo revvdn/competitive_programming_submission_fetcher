@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     requests = None
 
 from backend.core import Problem, Submission, UserProfile
-from backend.platforms.base import Platfrom
+from backend.platforms.base import Platform
 from backend.storage import JsonCache
 
 API_USER_INFO = "https://codeforces.com/api/user.info"
@@ -20,7 +20,7 @@ API_USER_STATUS = "https://codeforces.com/api/user.status"
 API_PROBLEMSET = "https://codeforces.com/api/problemset.problems"
 PROBLEM_CACHE = "problem_cache.json"
 
-class CodeforcesPlatform(Platfrom):
+class CodeforcesPlatform(Platform):
     name = "codeforces"
 
     def __init__(
@@ -29,7 +29,7 @@ class CodeforcesPlatform(Platfrom):
             session: Any | None = None,
         ) -> None:
             self.cache = JsonCache(cache_dir)
-            self.session = self.session or (requests.Session() if requests is not None else None)
+            self.session = session or (requests.Session() if requests is not None else None)
 
     def fetch_profile(self, handle:str) -> UserProfile:
         data = self.fetch_json(API_USER_INFO, {"handles": handle})
@@ -38,7 +38,7 @@ class CodeforcesPlatform(Platfrom):
         return UserProfile(handle = handle, platform=self.name)
     
     def fetch_submissions(self, handle: str) -> list[Submission]:
-        data = self.fetch_json(API_USER_STATUS, {"handles": handle})
+        data = self.fetch_json(API_USER_STATUS, {"handle": handle})
         if data.get("status") != "OK":
             raise RuntimeError("failed to fetch cf submission")
         
@@ -70,6 +70,6 @@ class CodeforcesPlatform(Platfrom):
             with urlopen(f"{url}{query}", timeout=20) as response:
                 return json.loads(response.read().decode("utf-8"))
             
-            response = self.session.get(url, params = params, timeout =20)
-            response.raise_for_status()
-            return response.json()
+        response = self.session.get(url, params = params, timeout =20)
+        response.raise_for_status()
+        return response.json()

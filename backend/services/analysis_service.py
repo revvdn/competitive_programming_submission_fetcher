@@ -50,11 +50,11 @@ class AnalysisService:
         )
     
     @staticmethod
-    def similar_problmes(problem: Problem, problems: dict[str, Problem]) -> list[dict[str, Any]]:
+    def similar_problems(problem: Problem, problems: dict[str, Problem]) -> list[dict[str, Any]]:
         similar: list[dict[str, Any]] = []
         source_tags = set(problem.tags)
         for candidate in problems.values():
-            if candidate.problem_id == problem.problem_id_id:
+            if candidate.problem_id == problem.problem_id:
                 continue
 
             shared_tags = sorted(source_tags.intersection(candidate.tags))
