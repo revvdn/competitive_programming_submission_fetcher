@@ -25,7 +25,7 @@ class AnalysisService:
 
         return {
             **problem.to_dict(),
-            "similar_problem" : similar[:10],
+            "similar_problems" : similar[:10],
             "statistic": {
                 "nearby_rating_windows": 200,
                 "difficulty_distribution": dict(
