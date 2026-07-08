@@ -11,7 +11,7 @@ enum class ScreenState {
 
 struct Problem
 {
-    int contest_id = 0;
+    std::string contest_id;
     std::string index;
     std::string problem_id;
     std::string name;
@@ -30,12 +30,14 @@ struct Analysis
     std::vector<Problem> similar_problems;
     std::vector<std::pair<std::string, int>> difficulty_distribution;
     int same_rating_count = 0;
+    std::string solve_prob;
+    std::string solve_time;
 };
 
 struct AppState
 {
     std::string platform = "codeforces";
-    std::string handle = "-- fill here :) --";
+    std::string handle = "";
     bool loading = false;
     std::string status = "ready";
     std::string error;

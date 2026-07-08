@@ -107,9 +107,16 @@ std::vector<std::string> tostringvector(const json& value) {
 
 Problem parseproblem (const json& item) {
     Problem prob;
-    prob.contest_id = item.value("contestId", 0);
+    if (item.contains("contestId")) {
+        if (item["contestId"].is_number()) {
+            prob.contest_id = std::to_string(item["contestId"].get<int>());
+        } else {
+            prob.contest_id = item["contestId"].get<std::string>();
+        }
+    }
+    //prob.contest_id = item.value("contestId", 0);
     prob.index = item.value("index", "");
-    prob.problem_id = item.value("problemId", std::to_string(prob.contest_id) + prob.index);
+    prob.problem_id = item.value("problemId", prob.contest_id + prob.index);
     prob.name = item.value("name", "");
     prob.rating = item.value("rating", 0);
     prob.tags = tostringvector(item.value("tags", json::array()));
@@ -187,6 +194,12 @@ void analyzeselected (AppState& state) {
             analysis.similar_problems.push_back(parseproblem(similar));
         }
 
+        if (state.platform == "atcoder") {
+            const auto atcoder_metrics = item.value("atcoder_metrics", json::object());
+            analysis.solve_prob = atcoder_metrics.value("solve_prob", "");
+            analysis.solve_time = atcoder_metrics.value("solve_time_mins", "");
+        }
+
         const auto distribute = item.value("statistic", json::object()).value("difficulty_distribution", json::object());
         for (auto iter = distribute.begin(); iter != distribute.end(); ++iter) {
             analysis.difficulty_distribution.push_back({iter.key(), iter.value().get<int>()});
@@ -249,14 +262,14 @@ ftxui::Element problemlistpane (const AppState& state) {
     ftxui::flex;
 }
 
-ftxui::Element inputpane (ftxui::Component handle_input, ftxui::Component start_button, const AppState& state) {
+ftxui::Element inputpane (ftxui::Component platform_toogle, ftxui::Component handle_input, ftxui::Component start_button, const AppState& state) {
     return ftxui::vbox({
         ftxui::text("input") | ftxui::bold,
         ftxui::separator(),
         ftxui::text("platform"),
-        ftxui::text(state.platform) | ftxui::color(ftxui::Color::Cyan),
+        platform_toogle -> Render(),
         ftxui::text(""),
-        ftxui::text("Handle"),
+        ftxui::text("handle"),
         handle_input -> Render(),
         ftxui::text(""),
         start_button -> Render(),
@@ -267,36 +280,51 @@ ftxui::Element analysispane (const AppState& state) {
     std::vector<ftxui::Element> content;
     
     if (state.current_screen != ScreenState::ProblemAnalysis) {
-        content.push_back(ftxui::text("select problem and press ENTER") |
-                            ftxui::color(ftxui::Color::GrayDark));
+        content.push_back(ftxui::text("select problem and press ENTER") | ftxui::color(ftxui::Color::GrayDark));
     }
     else {
-        content.push_back(ftxui::text(state.analysis.name) | ftxui::bold);
-        content.push_back(ftxui::text("ID       : " + state.analysis.problem_id));
-        content.push_back(ftxui::text("Rating    : " + std::to_string(state.analysis.rating)));
-        content.push_back(ftxui::text("Tags     : " + join (state.analysis.tags, ", ")));
-        content.push_back(ftxui::separator());
-        content.push_back(ftxui::text("difficulty distribution") | ftxui::bold);
+        if (state.platform == "atcoder") {
+            content.push_back(ftxui::text("Difficulty: " + std::to_string(state.analysis.rating)));
+            content.push_back(ftxui::text("solve prob: " + state.analysis.solve_prob));
+            content.push_back(ftxui::text("solve time: " + state.analysis.solve_time));
+            content.push_back(ftxui::separator());
+            content.push_back(ftxui::text("similar problem") | ftxui::bold);
 
-        for (const auto& [rating, count] : state.analysis.difficulty_distribution) {
-            const int bar_width = std::min (30, std::max(1, count / 30));
-            content.push_back(ftxui::hbox({
-                ftxui::text(rating) | 
-                ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 6),
-                ftxui::text(std::string(bar_width, '#')) |
-                ftxui::color(ftxui::Color::Green),
-                ftxui::text(" " + std::to_string(count)),
-            }));
-        }
+            if (state.analysis.similar_problems.empty()) {
+                content.push_back(ftxui::text("no similar problem found in cache"));
+            } else {
+                for (const auto& problem : state.analysis.similar_problems) {
+                    content.push_back(ftxui::text("-" + problem.problem_id + " " + problem.name));
+                }
+            }
+        } else {
+            content.push_back(ftxui::text(state.analysis.name) | ftxui::bold);
+            content.push_back(ftxui::text("ID       : " + state.analysis.problem_id));
+            content.push_back(ftxui::text("Rating    : " + std::to_string(state.analysis.rating)));
+            content.push_back(ftxui::text("Tags     : " + join (state.analysis.tags, ", ")));
+            content.push_back(ftxui::separator());
+            content.push_back(ftxui::text("difficulty distribution") | ftxui::bold);
 
-        content.push_back(ftxui::separator());
-        content.push_back(ftxui::text("similar problems") | ftxui::bold);
-        if (state.analysis.similar_problems.empty()) {
-            content.push_back(ftxui::text("no similar problem found in cache"));
-        }
-        else {
-            for (const auto& problem : state.analysis.similar_problems) {
-                content.push_back(ftxui::text("-" + problem.problem_id + " " + problem.name));
+            for (const auto& [rating, count] : state.analysis.difficulty_distribution) {
+                const int bar_width = std::min (30, std::max(1, count / 30));
+                content.push_back(ftxui::hbox({
+                    ftxui::text(rating) | 
+                    ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 6),
+                    ftxui::text(std::string(bar_width, '#')) |
+                    ftxui::color(ftxui::Color::Green),
+                    ftxui::text(" " + std::to_string(count)),
+                }));
+            }
+
+            content.push_back(ftxui::separator());
+            content.push_back(ftxui::text("similar problems") | ftxui::bold);
+            if (state.analysis.similar_problems.empty()) {
+                content.push_back(ftxui::text("no similar problem found in cache"));
+            }
+            else {
+                for (const auto& problem : state.analysis.similar_problems) {
+                    content.push_back(ftxui::text("-" + problem.problem_id + " " + problem.name));
+                }
             }
         }
     }
@@ -316,8 +344,16 @@ int main () {
     AppState state;
     auto screen = ftxui::ScreenInteractive::TerminalOutput();
 
+    std::vector<std::string> platforms = {"codeforces", "atcoder"};
+    int platform_selected = 0;
+    auto platform_toggle = ftxui::Radiobox(&platforms, &platform_selected);
+
+
     auto handle_input = ftxui::Input(&state.handle, "codeforces handle");
-    auto start_button = ftxui::Button("START", [&] { fetchprob(state); });
+    auto start_button = ftxui::Button("START", [&] { 
+        state.platform = platforms[platform_selected];
+        fetchprob(state); 
+    });
 
     std::vector<std::string> menu_entries;
     auto menu = ftxui::Menu(&menu_entries, &state.selected_problem);
@@ -326,7 +362,9 @@ int main () {
         ftxui::Container::Horizontal({
             menu,
             ftxui::Container::Vertical({
-                handle_input, start_button,
+                platform_toggle, 
+                handle_input, 
+                start_button,
             }),
         }),
     });
@@ -350,7 +388,7 @@ int main () {
         } else {
             main_area = ftxui::hbox({
                 problemlistpane(state),
-                state.problems.empty() ? inputpane(handle_input, start_button, state) : analysispane(state), 
+                (state.current_screen == ScreenState::FetchForm) ? inputpane(platform_toggle, handle_input, start_button, state) : analysispane(state),
             });
         }
 
