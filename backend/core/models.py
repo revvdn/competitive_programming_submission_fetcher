@@ -5,7 +5,7 @@ from typing import Any
 @dataclass(frozen=True)
 class Problem:
     problem_id: str
-    contest_id: int
+    contest_id: int | str
     index: str
     name: str
     rating: int | None = None
@@ -41,7 +41,7 @@ class Problem:
 class Submission:
     submission_id: int
     problem_id: str
-    contest_id: int
+    contest_id: int |  str
     index: str
     verdict: str | None
     creation_time_seconds: int

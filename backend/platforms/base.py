@@ -19,8 +19,9 @@ class Platform(ABC):
     def fetch_problemset(self, refresh: bool = False) -> dict[str, Problem]:
         raise NotImplementedError
     
-    def fetch_problem(self, problem_id: str, refresh: bool = False) -> Problem | None: 
-        return self.fetch_problemset(refresh=refresh).get(problem_id.strip().upper())
-    
+    def fetch_problem(self, problem_id: str, refresh: bool = False) -> Problem | None:
+        normalized_id = problem_id.strip().upper()
+        return self.fetch_problemset(refresh=refresh).get(normalized_id)
+
     def fetch_contests(self) -> list[dict]:
         return []

@@ -1,3 +1,3 @@
-from .codeforces import fetched_solved_problems
+from .codeforces import fetched_solved_problem
 
-__all__ = ["fetch_solved_problems"]
+__all__ = ["fetch_solved_problem"]

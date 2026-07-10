@@ -17,7 +17,7 @@ def load_cached_json(cache_dir: Path | None, name: str) -> Any:
         return read_json(path)
     return None
 
-def save_fetched_json(cache_dir: Path | None, name: str, data: Any) -> None:
+def save_cached_json(cache_dir: Path | None, name: str, data: Any) -> None:
     from backend.cache.manager import write_json
 
     write_json(cache_path(cache_dir, name), data)
@@ -96,7 +96,7 @@ def fetch_solved_problem(handle: str, cache_dir: Optional[Path] = None, refresh_
     return result
 '''
 
-def fetched_solved_problems(
+def fetched_solved_problem(
         handle: str, 
         cache_dir: Path | None = None,
         refresh_problemset: bool = False,

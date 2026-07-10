@@ -1,3 +1,3 @@
 from .engine import analyze_problem
 
-__all__ = ["analyze problem"]
+__all__ = ["analyze_problem"]

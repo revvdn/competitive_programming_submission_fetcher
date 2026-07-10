@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     fetch = subparser.add_parser("fetch", help="fetch solved cf problem")
     fetch.add_argument("handle", help="cf handle")
     fetch.add_argument("--refresh-problemset", action="store_true")
-    fetch.add_argument("--cache_dir", type=Path, default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    fetch.add_argument("--cache-dir", type=Path, default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     fetch.add_argument("--platform", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     fetch.add_argument("--pretty", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
 

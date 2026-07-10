@@ -145,7 +145,7 @@ void fetchprob (AppState& state) {
 
     try {
         const std::string command =
-            quote(pythoncommand()) + " " + quote(backendclipath()) + " fetch " + quote(state.handle);
+            quote(pythoncommand()) + " " + quote(backendclipath()) + " --platform " + quote(state.platform) + " fetch " + quote(state.handle);
         const auto payload = json::parse(runcommand(command));
         
         if (payload.value("status", "") != "success") 
@@ -262,14 +262,14 @@ ftxui::Element problemlistpane (const AppState& state) {
     ftxui::flex;
 }
 
-ftxui::Element inputpane (ftxui::Component platform_toogle, ftxui::Component handle_input, ftxui::Component start_button, const AppState& state) {
+ftxui::Element inputpane (ftxui::Component platform_toggle, ftxui::Component handle_input, ftxui::Component start_button, const AppState& state) {
     return ftxui::vbox({
         ftxui::text("input") | ftxui::bold,
         ftxui::separator(),
         ftxui::text("platform"),
-        platform_toogle -> Render(),
+        platform_toggle -> Render(),
         ftxui::text(""),
-        ftxui::text("handle"),
+        ftxui::text("Handle"),
         handle_input -> Render(),
         ftxui::text(""),
         start_button -> Render(),
@@ -349,7 +349,7 @@ int main () {
     auto platform_toggle = ftxui::Radiobox(&platforms, &platform_selected);
 
 
-    auto handle_input = ftxui::Input(&state.handle, "codeforces handle");
+    auto handle_input = ftxui::Input(&state.handle, "handle");
     auto start_button = ftxui::Button("START", [&] { 
         state.platform = platforms[platform_selected];
         fetchprob(state); 
