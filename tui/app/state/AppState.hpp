@@ -46,6 +46,7 @@ struct AppState
     int selected_problem = 0;
     Analysis analysis;
     ScreenState current_screen = ScreenState::FetchForm;
+    int tab_selected = 0;
 };
 
 

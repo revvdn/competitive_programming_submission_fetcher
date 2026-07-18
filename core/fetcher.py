@@ -94,10 +94,10 @@ def fetch_data(handle, base_dir) :
                 f"{sub['problem']['contestId']}{sub['problem']['index']}"
             )
             
-            '''
+            
             if pid in fetch_pid : 
                 continue
-            '''
+            
 
             if (pid not in problem_info or problem_info[pid]["rating"] is None) :
                 continue

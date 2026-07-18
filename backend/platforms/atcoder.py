@@ -2,10 +2,15 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from typing import Any, List
-import requests
+
 from backend.core import Problem, Submission, UserProfile
 from backend.platforms.base import Platform
 from backend.storage import JsonCache
+
+try:
+    import requests
+except ModuleNotFoundError :
+    requests = None
 
 #API endpoints from Kenkoooo (repo : https://github.com/kenkoooo/AtCoderProblems.git), btw thanks a lot for providing this im very helpful with that :)
 API_SUBMISSIONS = "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions"
@@ -106,11 +111,15 @@ class AtCoderPlatform(Platform):
             problems[pid] = problem
         return problems
     
-    def download_source(self, submission_id: int) -> str | None:
-        try:
-            from .atcoder_code import fetch_source_via_selenium
-        except Exception:
-            return None
-        return fetch_source_via_selenium(submission_id, session = self.session)
-    
+'''
+#for future development
+
+def download_source(self, submission_id: int) -> str | None:
+    try:
+        from .atcoder_code import fetch_source_via_selenium
+    except Exception:
+        return None
+    return fetch_source_via_selenium(submission_id, session = self.session)
+'''
+
         

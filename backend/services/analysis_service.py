@@ -58,6 +58,8 @@ class AnalysisService:
         return response
 
     def normalize_problem_id(self, problem_id: str) -> str:
+        if self.platform.name == "atcoder":
+            return problem_id.strip().lower()
         return problem_id.strip().upper()
     
     @staticmethod

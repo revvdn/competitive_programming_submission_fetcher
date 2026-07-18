@@ -121,7 +121,7 @@ def construct_readme(readme_path, all_pid, api_accepted, problems_info) :
     )
     '''
     content = content.replace(
-        "| codeforeces | 0 |",
+        "| codeforces | 0 |",
         f"| codeforces | {cf_count} |"
     )
 

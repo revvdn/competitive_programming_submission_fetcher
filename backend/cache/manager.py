@@ -31,13 +31,13 @@ def cached_json(name: str, default: Any = None, cache_dir: Path | None = None) -
     current = chace_root / name
     if current.exists():
         value = read_json(current, default)
-        if value:
+        if value is not None:
             return value
 
     legacy = LEGACY_STORAGE_DIR / name
     if legacy.exists():
         value = read_json(legacy, default)
-        if value:
+        if value :
             return value
         
     legacy_root = PROJECT_ROOT / name

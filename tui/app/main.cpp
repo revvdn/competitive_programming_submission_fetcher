@@ -21,6 +21,8 @@ using json = nlohmann::json;
 #define CPSE_PROJECT_ROOT "."
 #endif
 
+std::vector<std::string> menu_entries;
+
 std::string quote (const std::string& value) {
     #ifdef _WIN32
         std::string escaped = "\"";
@@ -137,82 +139,118 @@ std::string join (const std::vector<std::string>& values, const std::string& sep
     return stream.str();
 }
 
-void fetchprob (AppState& state) {
+void fetchprob (AppState& state, ftxui::ScreenInteractive& screen, ftxui::Component menu) {
     state.loading = true;
     state.current_screen = ScreenState::Loading;
+    //state.error.clear();
+    //state.status = "fetching solved problem";
     state.error.clear();
-    state.status = "fetching solved problem";
+    state.status = "fetching solved problems";
+    screen.Post(ftxui::Event::Custom);
+    
+    std::thread([&state, &screen, menu] {
+        try {
+            const std::string command = quote(pythoncommand()) + " " + quote(backendclipath()) + " --platform " + quote(state.platform) + " fetch " + quote(state.handle);
+            
+            std::string raw_output = runcommand(command);
+            const auto payload = json::parse(raw_output);
 
-    try {
-        const std::string command =
-            quote(pythoncommand()) + " " + quote(backendclipath()) + " --platform " + quote(state.platform) + " fetch " + quote(state.handle);
-        const auto payload = json::parse(runcommand(command));
-        
-        if (payload.value("status", "") != "success") 
-            throw std::runtime_error(payload.value("error", "backend error"));
+            if (payload.value("status", "") != "success") 
+                throw std::runtime_error(payload.value("error", "backend error"));
 
-        state.problems.clear();
-        for (const auto& item : payload.at("problems")) {
-            state.problems.push_back(parseproblem(item));
+            screen.Post([&state, payload, &screen, menu] {
+                state.problems.clear();
+                for (const auto& item: payload.at("problems")) {
+                    state.problems.push_back(parseproblem(item));
+                }
+                state.selected_problem = 0;
+                state.status = " fetched " + std::to_string(state.problems.size()) + "solved problem";
+                state.current_screen = ScreenState::ProblemList;
+                state.loading = false;
+                state.tab_selected = 1;
+                menu->TakeFocus();
+                screen.Post(ftxui::Event::Custom);
+            });
+        } catch (const std::exception& exc) {
+            std::string error_msg = exc.what();
+            screen.Post([&state, error_msg, &screen] {
+                state.error = error_msg;
+                state.status = "fetch_fail";
+                state.current_screen = ScreenState::FetchForm;
+                state.loading = false;
+                state.tab_selected = 0;
+                screen.Post(ftxui::Event::Custom);
+            });
         }
-        state.selected_problem = 0;
-        state.status = "fetched " + std::to_string(state.problems.size()) + " solved problem";
-        state.current_screen = ScreenState::ProblemList;
-    } catch (const std::exception& exc) {
-        state.error = exc.what();
-        state.status = "fetch fail";
-        state.current_screen = ScreenState::FetchForm;
-    }
-
-    state.loading = false;
+    }).detach();
 }
 
-void analyzeselected (AppState& state) {
+
+void analyzeselected (AppState& state, ftxui::ScreenInteractive& screen, ftxui::Component menu) {
     if (state.problems.empty())
         return;
     const Problem& selected = state.problems[state.selected_problem];
     state.error.clear();
     state.status = "analyze " + selected.problem_id + "...";
 
-    try {
-        const std::string command = 
-            quote(pythoncommand()) + " " + quote(backendclipath()) + " analyze " + quote(selected.problem_id);
-        const auto payload = json::parse(runcommand(command));
+    std::string problem_id = selected.problem_id;
+    std::string platform = state.platform;
+    std::string name = selected.name;
+    int selected_rating = selected.rating;
 
-        if (payload.value("status", "") != "success") 
-            throw std::runtime_error(payload.value("error", "unkown backend error"));
+    screen.Post(ftxui::Event::Custom);
 
-        const auto& item = payload.at("analysis");
-        Analysis analysis;
-        analysis.problem_id = item.value("problemId", selected.problem_id);
-        analysis.name = item.value("name", selected.name);
-        analysis.rating = item.value("rating", selected.rating);
-        analysis.tags = tostringvector(item.value("tags", json::array()));
-        analysis.same_rating_count = item.value("statistic", json::object()).value("same_rating_count", 0);
+    std::thread([&state, &screen, menu, problem_id, platform, name, selected_rating]() {
+        try {
+            const std::string command = quote(pythoncommand()) + " " + quote(backendclipath()) + " --platform " + quote(platform) + " analyze " + quote(problem_id);
 
-        for (const auto& similar : item.value("similar_problems", json::array())) {
-            analysis.similar_problems.push_back(parseproblem(similar));
+            const auto payload = json::parse(runcommand(command));
+
+            if (payload.value("status", "") != "success")
+                throw std::runtime_error(payload.value("error", "unkown backend error"));
+
+            const auto& item = payload.at("analysis");
+            Analysis analysis;
+            analysis.problem_id = item.value("problemid", problem_id);
+            analysis.name = item.value("name", "");
+            analysis.rating = item.value("rating", 0);
+            analysis.tags = tostringvector(item.value("tags", json::array()));
+            analysis.same_rating_count = item.value("statisic", json::object()).value("same_rating_count", 0);
+            
+            for (const auto& similar : item.value("similar_problems", json::array())) {
+                analysis.similar_problems.push_back(parseproblem(similar));
+            }
+
+            if (platform == "atcoder") {
+                const auto atcoder_metrics = item.value("atcoder_metrics", json::object());
+                analysis.solve_prob = atcoder_metrics.value("solve_prob", "");
+                analysis.solve_time = atcoder_metrics.value("solve_time_mins", "");
+            }
+
+            const auto distribute = item.value("statistic", json::object()).value("difficulty_distribution", json::object());
+            std::vector<std::pair<std::string , int>> temp_distribution;
+            for (auto iter = distribute.begin(); iter != distribute.end(); iter++) {
+                temp_distribution.push_back({iter.key(), iter.value().get<int>()});
+            }
+
+            screen.Post([&state, &screen, menu, analysis, temp_distribution, problem_id]() {
+                state.analysis = analysis;
+                state.analysis.difficulty_distribution = temp_distribution;
+                state.status = "analysis for " + problem_id;
+                state.current_screen = ScreenState::ProblemAnalysis;
+                state.tab_selected = 1;
+                menu -> TakeFocus();
+                screen.Post(ftxui::Event::Custom);
+            });
+        } catch (const std::exception& exc) {
+            std::string error_msg = exc.what();
+            screen.Post([&state, &screen, error_msg] {
+                state.error = error_msg;
+                state.status = "analysis fail";
+                screen.Post(ftxui::Event::Custom);
+            });
         }
-
-        if (state.platform == "atcoder") {
-            const auto atcoder_metrics = item.value("atcoder_metrics", json::object());
-            analysis.solve_prob = atcoder_metrics.value("solve_prob", "");
-            analysis.solve_time = atcoder_metrics.value("solve_time_mins", "");
-        }
-
-        const auto distribute = item.value("statistic", json::object()).value("difficulty_distribution", json::object());
-        for (auto iter = distribute.begin(); iter != distribute.end(); ++iter) {
-            analysis.difficulty_distribution.push_back({iter.key(), iter.value().get<int>()});
-        }
-
-        state.analysis = analysis;
-        state.status = "analysis for " + selected.problem_id;
-        state.current_screen = ScreenState::ProblemAnalysis;
-
-    } catch (const std::exception& exc) {
-        state.error = exc.what();
-        state.status = "analysis fail";
-    }
+    }).detach();
 }
 
 ftxui::Element statusline (const AppState& state) {
@@ -350,22 +388,27 @@ int main () {
 
 
     auto handle_input = ftxui::Input(&state.handle, "handle");
+    auto menu = ftxui::Menu(&menu_entries, &state.selected_problem);
     auto start_button = ftxui::Button("START", [&] { 
         state.platform = platforms[platform_selected];
-        fetchprob(state); 
+        fetchprob(state, screen, menu); 
     });
 
-    std::vector<std::string> menu_entries;
-    auto menu = ftxui::Menu(&menu_entries, &state.selected_problem);
+    auto form_container = ftxui::Container::Vertical({
+        platform_toggle,
+        handle_input,
+        start_button,
+    });
+
+    auto tab_container = ftxui::Container::Tab({
+        form_container,
+        ftxui::Renderer([] {return ftxui::text("");}),
+    }, &state.tab_selected);
 
     auto layout = ftxui::Container::Vertical({
         ftxui::Container::Horizontal({
             menu,
-            ftxui::Container::Vertical({
-                platform_toggle, 
-                handle_input, 
-                start_button,
-            }),
+            tab_container,
         }),
     });
 
@@ -410,15 +453,23 @@ int main () {
             return true;
         }
         if (event == ftxui::Event::Escape) {
-            if (!state.problems.empty()) {
+            if (state.current_screen == ScreenState::ProblemAnalysis) {
                 state.current_screen = ScreenState::ProblemList;
                 state.status = "back to problem list";
+                state.tab_selected = 1;
+                menu -> TakeFocus();
+                return true;
+            } else if (state.current_screen == ScreenState::ProblemList) {
+                state.current_screen = ScreenState::FetchForm;
+                state.status = "ready";
+                state.tab_selected = 0;
+                platform_toggle -> TakeFocus();
                 return true;
             }
         }
         if (event == ftxui::Event::Return) {
-            if (!state.problems.empty()) {
-                analyzeselected(state);
+            if (state.current_screen == ScreenState::ProblemList && !state.problems.empty()) {
+                analyzeselected(state, screen, menu);
                 return true;
             }
         }

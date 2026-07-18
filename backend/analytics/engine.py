@@ -69,6 +69,6 @@ from backend.services import AnalysisService, create_platform
 def normalize_problem_id(problem_id : str) -> str:
     return problem_id.strip().upper()
 
-def analyze_problem(problem_id : str, cache_dir : Path | None = None) -> dict[str, Any] :
-    platform = create_platform("codeforces", cache_dir = cache_dir)
+def analyze_problem(problem_id : str, cache_dir : Path | None = None, platform_name:  str = "codeforces") -> dict[str, Any] :
+    platform = create_platform(platform_name, cache_dir = cache_dir)
     return AnalysisService(platform).analyze_problem(problem_id) 
