@@ -6,6 +6,8 @@
 #include<stdexcept>
 #include<string>
 #include<vector>
+#include<chrono>
+#include<thread>
 
 #include<ftxui/component/component.hpp>
 #include<ftxui/component/event.hpp>
@@ -22,6 +24,12 @@ using json = nlohmann::json;
 #endif
 
 std::vector<std::string> menu_entries;
+
+const std::vector<std::string> spinner = {
+    "⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"
+};
+
+int spinner_frame = 0;
 
 std::string quote (const std::string& value) {
     #ifdef _WIN32
@@ -382,6 +390,18 @@ int main () {
     AppState state;
     auto screen = ftxui::ScreenInteractive::TerminalOutput();
 
+    std::thread animation([&] {
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(80));
+
+            if (state.loading) {
+                spinner_frame = (spinner_frame + 1) % spinner.size();
+                screen.Post(ftxui::Event::Custom);
+            }
+        }
+    });
+    animation.detach();
+
     std::vector<std::string> platforms = {"codeforces", "atcoder"};
     int platform_selected = 0;
     auto platform_toggle = ftxui::Radiobox(&platforms, &platform_selected);
@@ -421,9 +441,17 @@ int main () {
         ftxui::Element main_area;
         if (state.loading) {
             main_area = ftxui::vbox({
-                ftxui::text("loading...") | 
-                ftxui::bold,
-                ftxui::text("fetch data from backend"),
+                ftxui::text(spinner[spinner_frame] + "loading...") | 
+                ftxui::bold |
+                ftxui::color(ftxui::Color::Green),
+
+                //ftxui::text("fetching data from backend"),
+
+                //ftxui::separator(),
+                ftxui::text(state.status),
+                ftxui::separator(),
+                //ftxui::gauge((spinner_frame % 10 ) / 10.0f) /*| ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 40)*/,
+                
             }) |
             ftxui::center |
             ftxui::border |
